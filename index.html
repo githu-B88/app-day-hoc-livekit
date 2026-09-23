@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <script>
+      (function() {
+        try {
+          var nativeFetch = window.fetch;
+          if (typeof nativeFetch === 'function') {
+            var currentFetch = function() {
+              return nativeFetch.apply(this, arguments);
+            };
+            Object.defineProperty(window, 'fetch', {
+              get: function() { return currentFetch; },
+              set: function(newFn) { currentFetch = newFn; },
+              configurable: true,
+              enumerable: true
+            });
+            if (typeof globalThis !== 'undefined' && globalThis !== window) {
+              try {
+                Object.defineProperty(globalThis, 'fetch', {
+                  get: function() { return currentFetch; },
+                  set: function(newFn) { currentFetch = newFn; },
+                  configurable: true,
+                  enumerable: true
+                });
+              } catch (_) {}
+            }
+          }
+        } catch (err) {
+          console.warn('[Fetch Polyfill] Could not define property on window.fetch:', err);
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lớp Học Trực Tuyến Toán Lý Hóa</title>
+    <meta name="description" content="Nền tảng phòng học trực tuyến nhóm nhỏ chuyên môn Toán, Lý, Hóa với WebRTC LiveKit, bảng xanh phấn trắng tldraw đồng bộ real-time và phân quyền lên bảng." />
+    <meta property="og:title" content="Lớp Học Trực Tuyến Toán Lý Hóa" />
+    <meta property="og:description" content="Nền tảng phòng học trực tuyến nhóm nhỏ chuyên môn Toán, Lý, Hóa với WebRTC LiveKit, bảng xanh phấn trắng tldraw đồng bộ real-time và phân quyền lên bảng." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Caveat:wght@500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-950 text-slate-100 antialiased overflow-hidden select-none">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

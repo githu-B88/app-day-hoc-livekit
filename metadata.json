@@ -1,0 +1,6 @@
+{
+  "name": "Lớp Học Trực Tuyến Toán Lý Hóa",
+  "description": "Nền tảng phòng học trực tuyến nhóm nhỏ chuyên môn Toán, Lý, Hóa với WebRTC LiveKit, bảng xanh phấn trắng tldraw đồng bộ real-time và phân quyền lên bảng.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

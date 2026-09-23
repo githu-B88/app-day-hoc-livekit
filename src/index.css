@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/* KaTeX in-card compact math display */
+.katex-math-render .katex-display {
+  margin: 0.25rem 0 !important;
+}
+
+.katex-math-render .katex {
+  font-size: 1.15em;
+  text-rendering: geometricPrecision;
+}

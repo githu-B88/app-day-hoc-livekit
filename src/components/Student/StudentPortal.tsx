@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   User,
+  Users,
   Video,
   Lock,
   Unlock,
@@ -12,7 +13,8 @@ import {
   Atom,
   CheckCircle,
   BookOpen,
-  ArrowRight
+  ArrowRight,
+  GraduationCap
 } from 'lucide-react';
 import { ClassroomRoom, SubjectType, UserAccount } from '../../types';
 import { livekitService } from '../../services/livekitService';
@@ -31,6 +33,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   onOpenLiveKitConfig,
 }) => {
   const [rooms, setRooms] = useState<ClassroomRoom[]>([]);
+  const [students, setStudents] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -39,11 +42,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const allRooms = await livekitService.fetchRooms();
+      const [allRooms, allStudents] = await Promise.all([
+        livekitService.fetchRooms(),
+        livekitService.fetchStudents(),
+      ]);
       setRooms(allRooms);
+      setStudents(allStudents);
     } catch (err: any) {
-      console.warn('Lỗi khi tải danh sách phòng, sử dụng danh sách dự phòng:', err?.message || err);
+      console.warn('Lỗi khi tải danh sách phòng và học sinh, sử dụng danh sách dự phòng:', err?.message || err);
       setRooms(livekitService.getInitialRooms());
+      setStudents(livekitService.getDefaultStudents());
     } finally {
       setIsLoading(false);
     }
@@ -225,8 +233,53 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     )}
 
                     <div className="text-xs text-slate-400 flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
+                      <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>Giáo viên phụ trách:</span>
                       <strong className="text-slate-200">{room.teacherName || 'Thầy Nguyễn Minh'}</strong>
+                    </div>
+
+                    {/* Hàng dưới Giáo viên phụ trách: Học sinh tham gia lớp: Cụm avatar tròn xếp lấn lên nhau đặt sát dấu hai chấm, cách 1 dấu cách */}
+                    <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center gap-1.5 flex-wrap min-h-[30px]">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Học sinh tham gia lớp:</span>
+                      </div>
+
+                      {/* Cụm avatar tròn xếp lấn lên nhau đặt ngay gần dấu : cách đúng 1 space (gap-1.5) */}
+                      <div className="flex items-center -space-x-1.5 py-0.5">
+                        {room.assignedStudentIds?.slice(0, 6).map((sid) => {
+                          const st = students.find((s) => s.id === sid);
+                          const isCurrent = sid === currentUser.id;
+                          return (
+                            <div
+                              key={sid}
+                              title={st ? `${st.name}${isCurrent ? ' (Bạn)' : ''}` : sid}
+                              className={`w-6 h-6 rounded-full bg-gradient-to-tr ${
+                                st?.avatarColor || 'from-slate-600 to-slate-700'
+                              } border-2 ${
+                                isCurrent
+                                  ? 'border-emerald-400 ring-2 ring-emerald-500/40 z-10 scale-105'
+                                  : 'border-slate-900'
+                              } flex items-center justify-center text-[10px] font-bold text-white shadow transition hover:scale-110 hover:z-20 cursor-default`}
+                            >
+                              {st ? st.name.charAt(0) : '?'}
+                            </div>
+                          );
+                        })}
+                        {(room.assignedStudentIds?.length || 0) > 6 && (
+                          <div
+                            title={`Còn ${(room.assignedStudentIds?.length || 0) - 6} học sinh khác`}
+                            className="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[9px] font-bold text-slate-300 shadow cursor-default"
+                          >
+                            +{(room.assignedStudentIds?.length || 0) - 6}
+                          </div>
+                        )}
+                        {(!room.assignedStudentIds || room.assignedStudentIds.length === 0) && (
+                          <span className="text-[11px] text-slate-500 italic">
+                            Chưa có học sinh
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

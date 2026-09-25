@@ -14,6 +14,12 @@ export const MATH_FORMULAS: MathFormulaItem[] = [
     category: 'calculus',
   },
   {
+    id: 'by_parts',
+    title: 'Tích phân từng phần',
+    latex: '\\int u\\,dv = u\\cdot v - \\int v\\,du',
+    category: 'calculus',
+  },
+  {
     id: 'derivative_quotient',
     title: 'Đạo hàm phân thức',
     latex: '\\left(\\frac{u}{v}\\right)\' = \\frac{u\'v - uv\'}{v^2}',
@@ -42,6 +48,108 @@ export const MATH_FORMULAS: MathFormulaItem[] = [
     title: 'Tích vô hướng 2 vector',
     latex: '\\vec{u} \\cdot \\vec{v} = |\\vec{u}| \\cdot |\\vec{v}| \\cdot \\cos(\\vec{u}, \\vec{v})',
     category: 'geometry',
+  },
+];
+
+export const PHYSICS_FORMULAS: MathFormulaItem[] = [
+  {
+    id: 'rlc_impedance',
+    title: 'Tổng trở mạch RLC nối tiếp',
+    latex: 'Z = \\sqrt{R^2 + (Z_L - Z_C)^2}, \\quad \\tan\\varphi = \\frac{Z_L - Z_C}{R}',
+    category: 'calculus',
+  },
+  {
+    id: 'ohms_law',
+    title: 'Định luật Ohm & Công suất',
+    latex: 'I = \\frac{U}{R}, \\quad P = U \\cdot I = I^2 \\cdot R = \\frac{U^2}{R}',
+    category: 'algebra',
+  },
+  {
+    id: 'harmonic_oscillation',
+    title: 'Phương trình dao động điều hòa',
+    latex: 'x = A\\cos(\\omega t + \\varphi), \\quad v = -\\omega A\\sin(\\omega t + \\varphi), \\quad a = -\\omega^2 x',
+    category: 'calculus',
+  },
+  {
+    id: 'newtons_second_law',
+    title: 'Định luật II Newton',
+    latex: '\\sum \\vec{F} = m \\cdot \\vec{a}, \\quad \\vec{F}_{dh} = -k\\vec{x}',
+    category: 'geometry',
+  },
+  {
+    id: 'mechanical_energy',
+    title: 'Bảo toàn cơ năng',
+    latex: 'W = W_d + W_t = \\frac{1}{2}mv^2 + mgh = \\text{hằng số}',
+    category: 'algebra',
+  },
+  {
+    id: 'standing_wave',
+    title: 'Điều kiện sóng dừng (2 đầu cố định)',
+    latex: '\\ell = k\\frac{\\lambda}{2} = k\\frac{v}{2f} \\quad (k \\in \\mathbb{N}^*)',
+    category: 'trigonometry',
+  },
+  {
+    id: 'photoelectric_effect',
+    title: 'Hệ thức Anhxtanh về quang điện',
+    latex: '\\varepsilon = hf = \\frac{hc}{\\lambda} = A + \\frac{1}{2}m v_{0\\max}^2',
+    category: 'algebra',
+  },
+  {
+    id: 'nuclear_decay',
+    title: 'Định luật phóng xạ hạt nhân',
+    latex: 'N(t) = N_0 \\cdot 2^{-\\frac{t}{T}} = N_0 \\cdot e^{-\\lambda t}',
+    category: 'calculus',
+  },
+];
+
+export const CHEM_FORMULAS: MathFormulaItem[] = [
+  {
+    id: 'esterification',
+    title: 'Phản ứng Este hóa',
+    latex: 'RCOOH + R\'OH \\overset{H_2SO_4, t^\\circ}{\\rightleftharpoons} RCOOR\' + H_2O',
+    category: 'algebra',
+  },
+  {
+    id: 'fermentation',
+    title: 'Lên men glucozo thành ancol',
+    latex: 'C_6H_{12}O_6 \\xrightarrow{\\text{men, } 30-35^\\circ C} 2C_2H_5OH + 2CO_2\\uparrow',
+    category: 'algebra',
+  },
+  {
+    id: 'silver_mirror',
+    title: 'Phản ứng tráng bạc (Anđehit)',
+    latex: 'RCHO + 2[Ag(NH_3)_2]OH \\xrightarrow{t^\\circ} RCOONH_4 + 2Ag\\downarrow + 3NH_3 + H_2O',
+    category: 'algebra',
+  },
+  {
+    id: 'alkene_bromine',
+    title: 'Phản ứng cộng Brom làm mất màu',
+    latex: 'CH_2=CH_2 + Br_2 \\longrightarrow CH_2Br-CH_2Br',
+    category: 'algebra',
+  },
+  {
+    id: 'copper_nitric',
+    title: 'Oxi hóa - khử (Cu + HNO3 loãng)',
+    latex: '3Cu + 8HNO_3 \\longrightarrow 3Cu(NO_3)_2 + 2NO\\uparrow + 4H_2O',
+    category: 'algebra',
+  },
+  {
+    id: 'equilibrium_lechatelier',
+    title: 'Tổng hợp Amoniac (Haber)',
+    latex: 'N_2(k) + 3H_2(k) \\overset{Fe, t^\\circ, p}{\\rightleftharpoons} 2NH_3(k) \\quad (\\Delta H < 0)',
+    category: 'algebra',
+  },
+  {
+    id: 'ph_formula',
+    title: 'Nồng độ pH & Tích số ion nước',
+    latex: '\\text{pH} = -\\log[H^+], \\quad [H^+][OH^-] = 10^{-14} \\text{ (ở } 25^\\circ\\text{C)}',
+    category: 'calculus',
+  },
+  {
+    id: 'ideal_gas',
+    title: 'Phương trình Clapeyron - Mendeleev',
+    latex: 'P \\cdot V = n \\cdot R \\cdot T, \\quad R \\approx 0.082 \\text{ atm.l/mol.K}',
+    category: 'algebra',
   },
 ];
 

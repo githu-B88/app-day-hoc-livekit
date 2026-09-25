@@ -17,7 +17,7 @@ import { SubjectType, Participant } from '../types';
 
 interface ClassroomHeaderProps {
   subject: SubjectType;
-  onSubjectChange: (sub: SubjectType) => void;
+  onSubjectChange?: (sub: SubjectType) => void;
   currentUser: Participant;
   participants: Participant[];
   onSelectUser: (p: Participant) => void;
@@ -32,7 +32,6 @@ interface ClassroomHeaderProps {
 
 export const ClassroomHeader: React.FC<ClassroomHeaderProps> = ({
   subject,
-  onSubjectChange,
   currentUser,
   participants,
   onSelectUser,
@@ -75,7 +74,7 @@ export const ClassroomHeader: React.FC<ClassroomHeaderProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden sm:block">
-              Nhóm nhỏ 3-7 học sinh • WebRTC LiveKit 1080p Bảng xanh
+              Nhóm nhỏ 3-7 học sinh • WebRTC LiveKit 1080p Bảng phấn STEM
             </p>
           </div>
         </div>
@@ -83,42 +82,25 @@ export const ClassroomHeader: React.FC<ClassroomHeaderProps> = ({
         {/* Vertical divider */}
         <div className="h-6 w-px bg-slate-800 hidden md:block mx-1" />
 
-        {/* Subject Switcher */}
-        <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
-          <button
-            onClick={() => onSubjectChange('math')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition ${
-              subject === 'math'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
+        {/* Fixed Room Subject Badge (Mặc định hiển thị theo môn học của phòng, không cho thay đổi khi vào học) */}
+        {subject === 'math' && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-semibold shadow-sm">
             <span>📐</span>
-            <span className="hidden sm:inline">Toán Học</span>
-          </button>
-          <button
-            onClick={() => onSubjectChange('physics')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition ${
-              subject === 'physics'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
+            <span>Môn: Toán Học</span>
+          </div>
+        )}
+        {subject === 'physics' && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold shadow-sm">
             <span>⚡</span>
-            <span className="hidden sm:inline">Vật Lý</span>
-          </button>
-          <button
-            onClick={() => onSubjectChange('chemistry')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition ${
-              subject === 'chemistry'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
+            <span>Môn: Vật Lý</span>
+          </div>
+        )}
+        {subject === 'chemistry' && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-semibold shadow-sm">
             <span>🧪</span>
-            <span className="hidden sm:inline">Hóa Học</span>
-          </button>
-        </div>
+            <span>Môn: Hóa Học</span>
+          </div>
+        )}
       </div>
 
       {/* Right: Network Quality, Role Selector, Config & Help */}
@@ -172,24 +154,28 @@ export const ClassroomHeader: React.FC<ClassroomHeaderProps> = ({
           </div>
         )}
 
-        {/* LiveKit Settings Modal Button */}
-        <button
-          onClick={onOpenLiveKitModal}
-          title="Cài đặt kết nối LiveKit Cloud / Server"
-          className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition"
-        >
-          <Settings className="w-4 h-4 text-emerald-400" />
-        </button>
+        {/* LiveKit Settings Modal Button (Chỉ hiển thị cho Giáo viên) */}
+        {currentUser.role === 'teacher' && (
+          <button
+            onClick={onOpenLiveKitModal}
+            title="Cài đặt kết nối LiveKit Cloud / Server"
+            className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition cursor-pointer"
+          >
+            <Settings className="w-4 h-4 text-emerald-400" />
+          </button>
+        )}
 
-        {/* Help / Docs Modal Button */}
-        <button
-          onClick={onOpenDocsModal}
-          title="Xem Giải thích Nguyên lý & Hướng dẫn triển khai"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition"
-        >
-          <HelpCircle className="w-4 h-4" />
-          <span className="hidden md:inline">Nguyên lý WebRTC</span>
-        </button>
+        {/* Help / Docs Modal Button (Chỉ hiển thị cho Giáo viên) */}
+        {currentUser.role === 'teacher' && (
+          <button
+            onClick={onOpenDocsModal}
+            title="Xem Giải thích Nguyên lý & Hướng dẫn triển khai"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition cursor-pointer"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden md:inline">Nguyên lý WebRTC</span>
+          </button>
+        )}
 
         {/* Logout Button */}
         {onLogout && (

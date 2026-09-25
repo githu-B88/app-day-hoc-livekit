@@ -377,14 +377,53 @@ export const ChalkboardCanvas: React.FC<ChalkboardCanvasProps> = ({
       }
     );
 
+    const unsubPerm = livekitService.on('whiteboard_permission', (data: any) => {
+      if (data.studentId === currentUser.id) {
+        if (data.canDraw) {
+          setNotification(`🎉 Bạn đã được ${data.by || 'Giáo viên'} cho phép cầm phấn lên bảng!`);
+        } else {
+          setNotification(`🔒 Giáo viên đã thu hồi quyền cầm phấn. Bảng đã chuyển về chế độ chỉ xem.`);
+        }
+        setTimeout(() => setNotification(null), 4500);
+      }
+    });
+
     return () => {
       unsubDraw();
       unsubClear();
       unsubCursor();
       unsubReward();
       unsubShapeUpdate();
+      unsubPerm();
     };
   }, [currentUser.id, currentUser.name]);
+
+  // Khi bị thu hồi quyền cầm phấn, dừng ngay thao tác vẽ và hủy chọn
+  useEffect(() => {
+    if (!canWrite) {
+      setIsDrawing(false);
+      setIsDraggingShape(false);
+      setSelectedShapeId(null);
+      setCurrentPoints([]);
+      setStartPoint(null);
+    }
+  }, [canWrite]);
+
+  // Ngăn chặn cuộn trang khi di chuột trên bảng vẽ
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Chặn cuộn trang khi di chuột trên bảng vẽ, bảng vẽ luôn cố định
+      e.preventDefault();
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   // Helper to determine bounding box for any shape
   const getShapeBounds = (shape: BoardShape): { x: number; y: number; w: number; h: number } => {
@@ -465,7 +504,20 @@ export const ChalkboardCanvas: React.FC<ChalkboardCanvasProps> = ({
 
     updateCanvasSize();
     window.addEventListener('resize', updateCanvasSize);
-    return () => window.removeEventListener('resize', updateCanvasSize);
+
+    // Bổ sung ResizeObserver để bảng vẽ phản hồi co giãn ngay lập tức khi ẩn/hiện camera strip
+    let ro: ResizeObserver | null = null;
+    if (containerRef.current && window.ResizeObserver) {
+      ro = new ResizeObserver(() => {
+        updateCanvasSize();
+      });
+      ro.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+      if (ro) ro.disconnect();
+    };
   }, [boardTheme, gridType, shapes, remoteCursors]);
 
   // Core Render Engine: Drawing the blackboard and all shapes
@@ -959,7 +1011,7 @@ export const ChalkboardCanvas: React.FC<ChalkboardCanvasProps> = ({
   // Mouse & Touch interaction handlers
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!canWrite) {
-      setNotification('🔒 Bạn chưa được Giáo viên cấp quyền lên bảng. Hãy bấm "Giơ tay phát biểu"!');
+      setNotification('🔒 Chế độ quan sát: Bạn chưa được Giáo viên cấp quyền phấn lên bảng. Hãy bấm "Giơ tay phát biểu"!');
       setTimeout(() => setNotification(null), 3500);
       return;
     }
@@ -1727,6 +1779,7 @@ export const ChalkboardCanvas: React.FC<ChalkboardCanvasProps> = ({
         isOpen={isMathModalOpen}
         onClose={() => setIsMathModalOpen(false)}
         onInsertFormula={handleInsertFormula}
+        subject={subject}
       />
 
       {/* Periodic Table Dialog */}

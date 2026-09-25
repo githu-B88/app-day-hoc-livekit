@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Chống tuyệt đối cuộn ngang cho toàn bộ ứng dụng */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Ẩn hoàn toàn thanh công cụ (toolbar) tldraw đối với học sinh ở chế độ chỉ xem */
+.tldraw-student-readonly .tlui-layout__bottom,
+.tldraw-student-readonly .tlui-toolbar,
+.tldraw-student-readonly .tlui-style-panel,
+.tldraw-student-readonly .tlui-menu-panel,
+.tldraw-student-readonly .tlui-navigation-panel,
+.tldraw-student-readonly .tlui-helper-buttons,
+.tldraw-student-readonly .tlui-focus-button,
+.tldraw-student-readonly [data-testid="tools.draw"],
+.tldraw-student-readonly [data-testid="tools.eraser"] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 /* KaTeX in-card compact math display */
 .katex-math-render .katex-display {
   margin: 0.25rem 0 !important;

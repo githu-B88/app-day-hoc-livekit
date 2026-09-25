@@ -5,7 +5,11 @@ import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
 import { createServer as createViteServer } from 'vite';
 import { db } from './src/server/db';
 
-dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
+dotenv.config({ override: true });
+if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET || process.env.LIVEKIT_API_SECRET.startsWith('eyJ')) {
+  dotenv.config({ path: '.env.example', override: true });
+}
 
 const app = express();
 const PORT = 3000;
@@ -208,7 +212,7 @@ app.get('/api/rooms/:id', (req: Request, res: Response): void => {
 // Tạo phòng học mới
 app.post('/api/rooms', (req: Request, res: Response): void => {
   try {
-    const { name, subject, teacherId = 'teacher_1', assignedStudentIds = [], description } = req.body;
+    const { name, code, subject, teacherId = 'teacher_1', assignedStudentIds = [], description } = req.body;
 
     if (!name || !subject) {
       res.status(400).json({
@@ -218,7 +222,7 @@ app.post('/api/rooms', (req: Request, res: Response): void => {
       return;
     }
 
-    const newRoom = db.createRoom(name, subject, teacherId, assignedStudentIds, description);
+    const newRoom = db.createRoom(name, subject, teacherId, assignedStudentIds, description, code);
     res.status(201).json({
       success: true,
       message: 'Tạo phòng học mới thành công',
@@ -229,12 +233,13 @@ app.post('/api/rooms', (req: Request, res: Response): void => {
   }
 });
 
-// Cập nhật thông tin phòng học (gán học sinh, đổi tên)
+// Cập nhật thông tin phòng học (gán học sinh, đổi tên, mã chuyên đề, mô tả)
 app.put('/api/rooms/:id', (req: Request, res: Response): void => {
   try {
-    const { name, subject, assignedStudentIds, description } = req.body;
+    const { name, code, subject, assignedStudentIds, description } = req.body;
     const updated = db.updateRoom(req.params.id, {
       name,
+      code,
       subject,
       assignedStudentIds,
       description,
@@ -322,13 +327,43 @@ app.post('/api/livekit/token', async (req: Request, res: Response): Promise<void
       participantName,
     } = req.body;
 
-    const apiKey = process.env.LIVEKIT_API_KEY || 'API8cRmvzzhjfCq';
-    const apiSecret = process.env.LIVEKIT_API_SECRET || 'secret';
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
     const serverUrl =
       process.env.LIVEKIT_URL ||
       process.env.NEXT_PUBLIC_LIVEKIT_URL ||
-      process.env.VITE_LIVEKIT_URL ||
-      'wss://eduwhite-i0qhtq4t.livekit.cloud';
+      process.env.VITE_LIVEKIT_URL;
+
+    // Bắt lỗi nếu thiếu biến môi trường từ .env.local
+    if (!apiKey || !apiSecret || !serverUrl) {
+      const missing: string[] = [];
+      if (!apiKey) missing.push('LIVEKIT_API_KEY');
+      if (!apiSecret) missing.push('LIVEKIT_API_SECRET');
+      if (!serverUrl) missing.push('LIVEKIT_URL');
+
+      const errorMsg = `Thiếu biến môi trường LiveKit: ${missing.join(', ')}. Vui lòng cấu hình đầy đủ trong file .env.local!`;
+      console.error(`[Token API 500 Error] ${errorMsg}`);
+      res.status(500).json({
+        success: false,
+        error: errorMsg,
+        message: errorMsg,
+        missing,
+      });
+      return;
+    }
+
+    // Bắt lỗi nếu LIVEKIT_API_SECRET bị dán nhầm chuỗi JWT Token (bắt đầu bằng eyJ...)
+    if (apiSecret.startsWith('eyJ')) {
+      const errorMsg = 'Khóa bí mật LIVEKIT_API_SECRET không hợp lệ: Bạn đang cấu hình một chuỗi JWT Token (bắt đầu bằng "eyJ...") thay vì API Secret thật của dự án LiveKit Cloud. Vui lòng vào cloud.livekit.io -> Project Settings -> Keys -> Bấm Copy Secret cho API Key ' + apiKey + ' và cập nhật vào file .env.local!';
+      console.error(`[Token API 500 Error] ${errorMsg}`);
+      res.status(500).json({
+        success: false,
+        error: errorMsg,
+        message: errorMsg,
+        isJwtSecret: true,
+      });
+      return;
+    }
 
     // 1. Chuẩn hóa biến roomName duy nhất đảm bảo cả Giáo viên và Học sinh vào CHÍNH XÁC cùng 1 phòng
     const candidateRoom = rawRoomName || roomId || 'room_math_12';
@@ -414,6 +449,7 @@ app.post('/api/livekit/token', async (req: Request, res: Response): Promise<void
 
     const token = await at.toJwt();
 
+    console.log("Token generated successfully:", token);
     console.log(`[Token API] Cấp token thành công: user=${finalName} (${finalRole}) -> room=${roomName}`);
 
     res.json({
@@ -430,11 +466,11 @@ app.post('/api/livekit/token', async (req: Request, res: Response): Promise<void
       roomInfo: targetRoom,
     });
   } catch (error: any) {
-    console.error('Lỗi cấp LiveKit Token:', error);
+    console.error('[Token API Error] Tạo token thất bại:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi cấp LiveKit token',
-      error: error.message,
+      error: `Tạo LiveKit Token thất bại: ${error.message || 'Lỗi không xác định'}`,
+      message: `Tạo LiveKit Token thất bại: ${error.message || 'Lỗi không xác định'}`,
     });
   }
 });
@@ -446,6 +482,81 @@ app.get('/api/health', (req: Request, res: Response) => {
     service: 'LiveKit Classroom Token & Signaling Gateway',
     timestamp: new Date().toISOString(),
   });
+});
+
+// API lấy trạng thái cấu hình LiveKit
+app.get('/api/livekit/config', (req: Request, res: Response) => {
+  const apiKey = process.env.LIVEKIT_API_KEY || '';
+  const apiSecret = process.env.LIVEKIT_API_SECRET || '';
+  const serverUrl =
+    process.env.LIVEKIT_URL ||
+    process.env.NEXT_PUBLIC_LIVEKIT_URL ||
+    process.env.VITE_LIVEKIT_URL ||
+    '';
+
+  res.json({
+    serverUrl,
+    apiKey,
+    hasSecret: Boolean(apiSecret),
+    isSecretJwt: apiSecret.startsWith('eyJ'),
+  });
+});
+
+// API cập nhật cấu hình LiveKit và lưu vào .env.local
+app.post('/api/livekit/config', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { serverUrl, apiKey, apiSecret } = req.body;
+
+    if (!serverUrl || !apiKey || !apiSecret) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng điền đầy đủ LiveKit URL, API Key và API Secret.',
+      });
+      return;
+    }
+
+    if (apiSecret.startsWith('eyJ')) {
+      res.status(400).json({
+        success: false,
+        message: 'API Secret không thể là một chuỗi JWT Token (bắt đầu bằng "eyJ..."). Vui lòng truy cập cloud.livekit.io -> Settings -> Keys -> Sao chép chuỗi Secret thật.',
+      });
+      return;
+    }
+
+    // Kiểm tra kết nối thật tới LiveKit Cloud bằng RoomServiceClient
+    const svc = new RoomServiceClient(serverUrl, apiKey, apiSecret);
+    await svc.listRooms();
+
+    // Nếu xác thực thành công, cập nhật biến môi trường và ghi vào .env.local
+    process.env.LIVEKIT_URL = serverUrl;
+    process.env.NEXT_PUBLIC_LIVEKIT_URL = serverUrl;
+    process.env.VITE_LIVEKIT_URL = serverUrl;
+    process.env.LIVEKIT_API_KEY = apiKey;
+    process.env.LIVEKIT_API_SECRET = apiSecret;
+
+    const envContent = `# LIVEKIT CLOUD CONFIGURATION (.env.local)
+LIVEKIT_URL="${serverUrl}"
+NEXT_PUBLIC_LIVEKIT_URL="${serverUrl}"
+VITE_LIVEKIT_URL="${serverUrl}"
+LIVEKIT_API_KEY="${apiKey}"
+LIVEKIT_API_SECRET="${apiSecret}"
+`;
+    const fs = await import('fs');
+    fs.writeFileSync('.env.local', envContent, 'utf-8');
+
+    console.log('[LiveKit Config] Cập nhật thành công cấu hình LiveKit mới vào .env.local');
+
+    res.json({
+      success: true,
+      message: 'Xác thực và lưu cấu hình LiveKit thành công!',
+    });
+  } catch (error: any) {
+    console.error('[LiveKit Config Error]:', error.message);
+    res.status(400).json({
+      success: false,
+      message: `Xác thực LiveKit thất bại: ${error.message}. Vui lòng kiểm tra lại URL wss:// và API Key/Secret.`,
+    });
+  }
 });
 
 async function startServer() {

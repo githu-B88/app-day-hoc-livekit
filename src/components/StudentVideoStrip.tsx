@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Mic,
   MicOff,
@@ -13,7 +13,10 @@ import {
   MoreVertical,
   VolumeX,
   Sparkles,
-  Wifi
+  Wifi,
+  ChevronRight,
+  ChevronLeft,
+  Users
 } from 'lucide-react';
 import { useTracks, VideoTrack } from '@livekit/components-react';
 import { Track } from 'livekit-client';
@@ -27,6 +30,8 @@ interface StudentVideoStripProps {
   onMuteParticipant: (id: string) => void;
   onMuteAllStudents: () => void;
   onSelectActiveParticipantView: (participant: Participant) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const StudentVideoStrip: React.FC<StudentVideoStripProps> = ({
@@ -37,7 +42,26 @@ export const StudentVideoStrip: React.FC<StudentVideoStripProps> = ({
   onMuteParticipant,
   onMuteAllStudents,
   onSelectActiveParticipantView,
+  isCollapsed: propIsCollapsed,
+  onToggleCollapse: propOnToggleCollapse,
 }) => {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : internalCollapsed;
+
+  const handleToggleCollapse = () => {
+    if (propOnToggleCollapse) {
+      propOnToggleCollapse();
+    } else {
+      setInternalCollapsed((prev) => !prev);
+    }
+    // Gửi sự kiện resize nhiều lần theo tiến trình transition để TLDraw / Canvas tính toán lại mượt mà
+    window.dispatchEvent(new Event('resize'));
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 150);
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 450);
+  };
+
   const isTeacher = currentUser.role === 'teacher';
   const teacher = participants.find((p) => p.role === 'teacher');
   const students = participants.filter((p) => p.role === 'student');
@@ -60,37 +84,86 @@ export const StudentVideoStrip: React.FC<StudentVideoStripProps> = ({
     });
   };
 
+  // KHI ĐANG THU GỌN: Hiển thị tab nút có mũi tên mở ra (ChevronLeft) cố định sát mép phải
+  if (isCollapsed) {
+    return (
+      <div className="relative shrink-0 z-30">
+        <button
+          type="button"
+          onClick={handleToggleCollapse}
+          title="Mở danh sách camera Giáo viên & Học sinh (Nhấn để hiện camera)"
+          className="absolute right-0 top-1/2 -translate-y-1/2 bg-slate-900/95 hover:bg-slate-800 text-slate-200 hover:text-white border-l border-y border-slate-700/80 rounded-l-2xl py-3 px-2 shadow-2xl backdrop-blur-md flex flex-col items-center gap-2.5 group transition cursor-pointer hover:border-emerald-500/50 hover:shadow-emerald-950/40"
+        >
+          <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/30 group-hover:scale-110 transition">
+            <ChevronLeft className="w-4 h-4" />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <Users className="w-4 h-4 text-slate-300 group-hover:text-emerald-300 transition" />
+            <span className="text-[10px] font-bold text-emerald-400 font-mono bg-emerald-500/10 px-1 py-0.5 rounded border border-emerald-500/20">
+              {participants.length}
+            </span>
+          </div>
+          <span className="[writing-mode:vertical-lr] text-[10px] font-bold tracking-widest text-slate-400 group-hover:text-slate-100 rotate-180 uppercase select-none">
+            Camera
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-72 xl:w-80 h-full border-l border-slate-800 bg-slate-950 flex flex-col shrink-0 overflow-hidden">
+    <div className="w-48 xs:w-52 sm:w-56 md:w-64 lg:w-72 xl:w-80 h-full border-l border-slate-800 bg-slate-950 flex flex-col shrink-0 overflow-hidden relative transition-all duration-300 ease-in-out">
+      {/* Nút có mũi tên thu vào nằm ở cạnh trái thanh cuộn (giữa màn hình) */}
+      <button
+        type="button"
+        onClick={handleToggleCollapse}
+        title="Thu gọn danh sách camera để tối đa diện tích bảng trắng"
+        className="absolute -left-3.5 top-1/2 -translate-y-1/2 z-30 w-7 h-12 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-l-lg flex items-center justify-center text-slate-300 hover:text-emerald-400 shadow-xl cursor-pointer transition group"
+      >
+        <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+      </button>
+
       {/* Strip Header */}
-      <div className="p-3.5 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-200 text-sm">Lớp Học Nhóm Nhỏ</span>
+      <div className="p-3 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-semibold text-slate-200 text-sm truncate">Lớp Học Trực Tuyến</span>
             <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               {participants.length} người
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
-            <Wifi className="w-3 h-3 text-emerald-400" />
-            <span>WebRTC 1080p ưu tiên bảng</span>
+          <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5">
+            <Wifi className="w-3 h-3 text-emerald-400 shrink-0" />
+            <span className="truncate">WebRTC 1080p ưu tiên bảng</span>
           </div>
         </div>
 
-        {isTeacher && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isTeacher && (
+            <button
+              onClick={onMuteAllStudents}
+              title="Tắt micro tất cả học sinh để giữ trật tự lớp"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-semibold transition border border-amber-500/40 cursor-pointer shadow-sm"
+            >
+              <VolumeX className="w-3 h-3 text-amber-400" />
+              <span className="hidden sm:inline">Tắt mic cả lớp</span>
+            </button>
+          )}
+
+          {/* Nút mũi tên thu gọn trong Header */}
           <button
-            onClick={onMuteAllStudents}
-            title="Tắt micro tất cả học sinh để giữ trật tự"
-            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition border border-slate-700"
+            type="button"
+            onClick={handleToggleCollapse}
+            title="Thu gọn danh sách camera (Phóng to bảng trắng)"
+            className="p-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700/80 flex items-center justify-center cursor-pointer shadow-sm"
           >
-            <VolumeX className="w-3 h-3 text-amber-400" />
-            <span>Tắt mic tất cả</span>
+            <ChevronRight className="w-4 h-4" />
           </button>
-        )}
+        </div>
       </div>
 
-      {/* Participants Video List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      {/* Participants Video List: Cuộn độc lập khi di chuột vào phần bên phải */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-3">
         {/* 1. Teacher Tile */}
         {teacher && (
           <div
@@ -124,7 +197,7 @@ export const StudentVideoStrip: React.FC<StudentVideoStripProps> = ({
             </div>
 
             {/* Real WebRTC Video or Avatar Tile */}
-            <div className="w-full h-28 rounded-xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex items-center justify-center relative overflow-hidden group">
+            <div className="w-full h-20 sm:h-24 md:h-28 rounded-xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex items-center justify-center relative overflow-hidden group">
               {(() => {
                 const tTrack = findCameraTrack(teacher.id, 'teacher');
                 if (tTrack && tTrack.publication && !tTrack.publication.isMuted) {
@@ -173,19 +246,57 @@ export const StudentVideoStrip: React.FC<StudentVideoStripProps> = ({
             >
               {/* Header inside tile */}
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-slate-200 truncate max-w-[130px]">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className="text-xs font-medium text-slate-200 truncate max-w-[105px]">
                     {student.name}
                   </span>
                   {isCurrent && (
-                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">
                       Bạn
+                    </span>
+                  )}
+                  {/* Icon micro nhỏ cạnh tên từng em để Giáo viên có thể bấm vào tắt/bật mic */}
+                  {isTeacher ? (
+                    <button
+                      type="button"
+                      onClick={() => onMuteParticipant(student.id)}
+                      title={
+                        student.isMuted
+                          ? `Bấm để BẬT micro của ${student.name}`
+                          : `Bấm để TẮT micro của ${student.name}`
+                      }
+                      className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center shrink-0 ${
+                        student.isMuted
+                          ? 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40'
+                          : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40'
+                      }`}
+                    >
+                      {student.isMuted ? (
+                        <MicOff className="w-3 h-3 text-rose-400" />
+                      ) : (
+                        <Mic className="w-3 h-3 text-emerald-400" />
+                      )}
+                    </button>
+                  ) : (
+                    <span
+                      title={student.isMuted ? 'Micro đang tắt' : 'Micro đang bật'}
+                      className={`p-1 rounded-md shrink-0 ${
+                        student.isMuted
+                          ? 'bg-slate-800 text-slate-500'
+                          : 'bg-emerald-500/20 text-emerald-400'
+                      }`}
+                    >
+                      {student.isMuted ? (
+                        <MicOff className="w-3 h-3" />
+                      ) : (
+                        <Mic className="w-3 h-3" />
+                      )}
                     </span>
                   )}
                 </div>
 
-                {/* Status Badges */}
-                <div className="flex items-center gap-1">
+                {/* Right status: Hand raise indicator */}
+                <div className="flex items-center gap-1 shrink-0">
                   {student.isHandRaised && (
                     <span
                       title="Học sinh đang giơ tay phát biểu"
@@ -194,20 +305,11 @@ export const StudentVideoStrip: React.FC<StudentVideoStripProps> = ({
                       <Hand className="w-3 h-3" />
                     </span>
                   )}
-                  {student.isMuted ? (
-                    <span className="p-1 rounded-md bg-slate-800 text-slate-500">
-                      <MicOff className="w-3 h-3" />
-                    </span>
-                  ) : (
-                    <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-400">
-                      <Mic className="w-3 h-3" />
-                    </span>
-                  )}
                 </div>
               </div>
 
               {/* Real WebRTC Video Tile Box */}
-              <div className="w-full h-24 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-center relative overflow-hidden group">
+              <div className="w-full h-18 sm:h-20 md:h-24 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-center relative overflow-hidden group">
                 {(() => {
                   const sTrack = findCameraTrack(student.id, 'student');
                   if (sTrack && sTrack.publication && !sTrack.publication.isMuted) {
@@ -242,14 +344,22 @@ export const StudentVideoStrip: React.FC<StudentVideoStripProps> = ({
                   {/* Grant / Revoke Board Access Button */}
                   <button
                     onClick={() => onToggleGrantBoard(student.id)}
-                    className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 rounded-xl text-xs font-semibold transition ${
+                    className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
                       student.canDraw
                         ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30'
+                        : student.isHandRaised
+                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-950/40 animate-pulse'
                         : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-950'
                     }`}
                   >
                     <PenTool className="w-3 h-3" />
-                    <span>{student.canDraw ? 'Thu hồi quyền' : 'Gọi lên bảng'}</span>
+                    <span>
+                      {student.canDraw
+                        ? 'Thu hồi quyền'
+                        : student.isHandRaised
+                        ? 'Mời lên bảng ✋'
+                        : 'Gọi lên bảng'}
+                    </span>
                   </button>
 
                   {/* Award Star / Praise */}

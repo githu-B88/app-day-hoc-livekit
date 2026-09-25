@@ -42,7 +42,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       const allRooms = await livekitService.fetchRooms();
       setRooms(allRooms);
     } catch (err: any) {
-      console.error('Lỗi khi tải danh sách phòng:', err);
+      console.warn('Lỗi khi tải danh sách phòng, sử dụng danh sách dự phòng:', err?.message || err);
+      setRooms(livekitService.getInitialRooms());
     } finally {
       setIsLoading(false);
     }
@@ -105,9 +106,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen h-screen w-full max-w-full bg-slate-950 text-slate-100 flex flex-col font-sans overflow-x-hidden overflow-hidden">
       {/* Header */}
-      <header className="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between z-10 shrink-0">
+      <header className="h-16 w-full max-w-full bg-slate-900 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between z-10 shrink-0 overflow-x-hidden">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
             <User className="w-5 h-5" />
@@ -149,7 +150,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6 overflow-y-auto">
+      <div className="flex-1 min-h-0 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6 overflow-x-hidden overflow-y-auto pb-16">
         {/* Error Alert if blocked by Token Security Gate */}
         {errorMessage && (
           <div className="p-4 rounded-2xl bg-rose-950/70 border border-rose-700/80 text-rose-200 text-xs sm:text-sm flex items-start gap-3 shadow-lg shadow-rose-950/40 animate-in fade-in">

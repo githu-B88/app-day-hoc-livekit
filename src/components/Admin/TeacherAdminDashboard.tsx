@@ -21,7 +21,9 @@ import {
   RefreshCw,
   AlertCircle,
   KeyRound,
-  UserPlus
+  UserPlus,
+  Edit3,
+  CheckCircle2
 } from 'lucide-react';
 import { ClassroomRoom, SubjectType, UserAccount } from '../../types';
 import { livekitService } from '../../services/livekitService';
@@ -50,6 +52,7 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
   // Modal tạo phòng
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomCode, setNewRoomCode] = useState('');
   const [newRoomSubject, setNewRoomSubject] = useState<SubjectType>('math');
   const [newRoomDescription, setNewRoomDescription] = useState('');
   const [newRoomSelectedStudents, setNewRoomSelectedStudents] = useState<string[]>([]);
@@ -64,6 +67,15 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
   // Modal gán học sinh vào phòng
   const [editingRoom, setEditingRoom] = useState<ClassroomRoom | null>(null);
   const [editAssignedStudents, setEditAssignedStudents] = useState<string[]>([]);
+
+  // Modal chỉnh sửa thông tin phòng học, tên chuyên đề & mô tả bài giảng
+  const [editingRoomInfo, setEditingRoomInfo] = useState<ClassroomRoom | null>(null);
+  const [editRoomCode, setEditRoomCode] = useState('');
+  const [editRoomName, setEditRoomName] = useState('');
+  const [editRoomDescription, setEditRoomDescription] = useState('');
+  const [isSavingRoomInfo, setIsSavingRoomInfo] = useState(false);
+  const [roomInfoSuccess, setRoomInfoSuccess] = useState<string | null>(null);
+  const [roomInfoError, setRoomInfoError] = useState<string | null>(null);
 
   // Tải dữ liệu từ DB
   const loadData = async () => {
@@ -109,6 +121,7 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
     try {
       await livekitService.createRoom({
         name: newRoomName.trim(),
+        code: newRoomCode.trim() ? newRoomCode.trim().toUpperCase() : undefined,
         subject: newRoomSubject,
         teacherId: currentUser.id,
         assignedStudentIds: newRoomSelectedStudents,
@@ -117,11 +130,56 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
 
       setIsCreateRoomOpen(false);
       setNewRoomName('');
+      setNewRoomCode('');
       setNewRoomDescription('');
       setNewRoomSelectedStudents([]);
       await loadData();
     } catch (err: any) {
       alert(`Lỗi tạo phòng: ${err.message}`);
+    }
+  };
+
+  // Mở modal sửa thông tin phòng, chuyên đề và mô tả
+  const handleOpenEditRoomInfo = (room: ClassroomRoom) => {
+    setEditingRoomInfo(room);
+    setEditRoomCode(room.code);
+    setEditRoomName(room.name);
+    setEditRoomDescription(room.description || '');
+    setRoomInfoSuccess(null);
+    setRoomInfoError(null);
+  };
+
+  // Lưu chỉnh sửa thông tin phòng, chuyên đề và mô tả
+  const handleSaveRoomInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRoomInfo) return;
+    if (!editRoomCode.trim()) {
+      setRoomInfoError('Vui lòng nhập tên chuyên đề lớp học (mã phòng)');
+      return;
+    }
+    if (!editRoomName.trim()) {
+      setRoomInfoError('Vui lòng nhập tên phòng học');
+      return;
+    }
+
+    setIsSavingRoomInfo(true);
+    setRoomInfoError(null);
+    try {
+      await livekitService.updateRoom(editingRoomInfo.id, {
+        code: editRoomCode.trim().toUpperCase(),
+        name: editRoomName.trim(),
+        description: editRoomDescription.trim(),
+      });
+      setRoomInfoSuccess('Đã cập nhật thông tin phòng học & chuyên đề thành công!');
+      await loadData();
+      setTimeout(() => {
+        setEditingRoomInfo(null);
+        setRoomInfoSuccess(null);
+      }, 700);
+    } catch (err: any) {
+      setRoomInfoError(`Lỗi khi lưu thông tin phòng: ${err.message}`);
+    } finally {
+      setIsSavingRoomInfo(false);
     }
   };
 
@@ -216,9 +274,9 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen h-screen w-full max-w-full bg-slate-950 text-slate-100 flex flex-col font-sans overflow-x-hidden overflow-hidden">
       {/* Top Navigation Bar */}
-      <header className="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between z-10 shrink-0">
+      <header className="h-16 w-full max-w-full bg-slate-900 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between z-10 shrink-0 overflow-x-hidden">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
             <GraduationCap className="w-5 h-5" />
@@ -281,7 +339,7 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
       </header>
 
       {/* Main Container */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 overflow-y-auto">
+      <div className="flex-1 min-h-0 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 overflow-x-hidden overflow-y-auto pb-16">
         {/* Navigation Tabs & Metrics */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-2 p-1 bg-slate-900 rounded-2xl border border-slate-800">
@@ -368,15 +426,33 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
                       </div>
 
                       {/* Room Code & Title */}
-                      <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                        {room.code}
-                      </span>
-                      <h3 className="font-bold text-base text-slate-100 mt-2 mb-1 leading-snug">
+                      <div className="flex items-center justify-between gap-2 mt-2 mb-1.5">
+                        <span
+                          className="inline-flex items-center text-[11px] font-mono font-medium text-emerald-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 shadow-sm"
+                        >
+                          {room.code}
+                        </span>
+
+                        <button
+                          onClick={() => handleOpenEditRoomInfo(room)}
+                          title="Sửa tên phòng học, mô tả bài giảng và tên chuyên đề"
+                          className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-emerald-300 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 px-2.5 py-1.5 rounded-xl transition shadow-sm"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="font-medium">Sửa phòng</span>
+                        </button>
+                      </div>
+
+                      <h3 className="font-bold text-base text-slate-100 mb-1 leading-snug">
                         {room.name}
                       </h3>
-                      {room.description && (
+                      {room.description ? (
                         <p className="text-xs text-slate-400 line-clamp-2 mb-3">
                           {room.description}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 italic mb-3">
+                          Chưa có mô tả bài giảng
                         </p>
                       )}
 
@@ -692,6 +768,19 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Tên chuyên đề lớp học (Mã thẻ span, ví dụ: TOAN12-CHUYENDE, VATLY-RLC):
+                </label>
+                <input
+                  type="text"
+                  value={newRoomCode}
+                  onChange={(e) => setNewRoomCode(e.target.value)}
+                  placeholder="Mã tự động nếu để trống (hoặc nhập: TOAN12-CHUYENDE)"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 transition uppercase font-mono"
+                />
+              </div>
+
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
@@ -882,6 +971,128 @@ export const TeacherAdminDashboard: React.FC<TeacherAdminDashboardProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SỬA THÔNG TIN PHÒNG HỌC, CHUYÊN ĐỀ & MÔ TẢ BÀI GIẢNG */}
+      {editingRoomInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-100 text-sm">Sửa Thông Tin Phòng Học</h3>
+                  <p className="text-xs text-slate-400">
+                    Cập nhật tên phòng, tên chuyên đề lớp học và mô tả bài giảng
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingRoomInfo(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveRoomInfo} className="p-6 space-y-4">
+              {roomInfoError && (
+                <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-700/80 text-rose-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{roomInfoError}</span>
+                </div>
+              )}
+
+              {roomInfoSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-700/80 text-emerald-200 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{roomInfoSuccess}</span>
+                </div>
+              )}
+
+              {/* Tên chuyên đề (Mã thẻ span) */}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Tên chuyên đề lớp học (Thẻ span hiển thị):</span>
+                  <span className="text-[11px] text-emerald-400 font-mono">Ví dụ: TOAN12-CHUYENDE, VATLY-RLC</span>
+                </label>
+                <input
+                  type="text"
+                  value={editRoomCode}
+                  onChange={(e) => setEditRoomCode(e.target.value)}
+                  placeholder="Ví dụ: TOAN12-CHUYENDE, VATLY-RLC, HOA10-CANBANG"
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-500 uppercase transition shadow-inner"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Tên chuyên đề này sẽ hiển thị tại thẻ màu ở danh sách lớp và trên thanh tiêu đề phòng học.
+                </p>
+              </div>
+
+              {/* Tên phòng học */}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Tên phòng học:
+                </label>
+                <input
+                  type="text"
+                  value={editRoomName}
+                  onChange={(e) => setEditRoomName(e.target.value)}
+                  placeholder="Ví dụ: Chuyên đề Luyện Thi Tích Phân & Hình Học Không Gian 12"
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 transition shadow-inner"
+                />
+              </div>
+
+              {/* Mô tả bài giảng */}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Mô tả bài giảng & Ghi chú buổi học:
+                </label>
+                <textarea
+                  value={editRoomDescription}
+                  onChange={(e) => setEditRoomDescription(e.target.value)}
+                  placeholder="Nhập tóm tắt nội dung trọng tâm bài giảng, yêu cầu chuẩn bị..."
+                  rows={3}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 transition shadow-inner resize-none"
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="pt-4 border-t border-slate-800 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingRoomInfo(null)}
+                  disabled={isSavingRoomInfo}
+                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingRoomInfo}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-950/40 flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                >
+                  {isSavingRoomInfo ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Đang lưu...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Lưu Thay Đổi</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

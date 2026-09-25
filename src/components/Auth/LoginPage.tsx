@@ -69,7 +69,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-slate-950 flex flex-col justify-center items-center px-4 py-8 relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full max-w-full bg-slate-950 flex flex-col justify-center items-center px-4 py-8 relative overflow-x-hidden overflow-y-auto font-sans">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />

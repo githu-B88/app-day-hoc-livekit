@@ -256,12 +256,15 @@ export const db = {
     subject: 'math' | 'physics' | 'chemistry',
     teacherId: string,
     assignedStudentIds: string[],
-    description?: string
+    description?: string,
+    customCode?: string
   ): ClassroomRoom {
     const data = ensureDb();
     const id = `room_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const prefix = subject === 'math' ? 'TOAN' : subject === 'physics' ? 'LY' : 'HOA';
-    const code = `${prefix}-${Math.floor(100 + Math.random() * 900)}`;
+    const code = customCode && customCode.trim()
+      ? customCode.trim().toUpperCase()
+      : `${prefix}-${Math.floor(100 + Math.random() * 900)}`;
 
     const newRoom: ClassroomRoom = {
       id,
@@ -295,16 +298,27 @@ export const db = {
 
   updateRoom(
     roomId: string,
-    updates: Partial<Pick<ClassroomRoom, 'name' | 'subject' | 'assignedStudentIds' | 'description'>>
+    updates: Partial<Pick<ClassroomRoom, 'code' | 'name' | 'subject' | 'assignedStudentIds' | 'description'>>
   ): ClassroomRoom | null {
     const data = ensureDb();
     const room = data.rooms.find((r) => r.id === roomId || r.code === roomId);
     if (!room) return null;
 
-    if (updates.name) room.name = updates.name.trim();
-    if (updates.subject) room.subject = updates.subject;
-    if (updates.assignedStudentIds) room.assignedStudentIds = updates.assignedStudentIds;
-    if (updates.description !== undefined) room.description = updates.description.trim();
+    if (updates.code !== undefined && updates.code.trim()) {
+      room.code = updates.code.trim();
+    }
+    if (updates.name !== undefined && updates.name.trim()) {
+      room.name = updates.name.trim();
+    }
+    if (updates.subject !== undefined) {
+      room.subject = updates.subject;
+    }
+    if (updates.assignedStudentIds !== undefined) {
+      room.assignedStudentIds = updates.assignedStudentIds;
+    }
+    if (updates.description !== undefined) {
+      room.description = updates.description.trim();
+    }
 
     writeDb(data);
     return room;
